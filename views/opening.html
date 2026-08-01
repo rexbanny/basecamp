@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Colaborate — Project Management</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        .landing {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+            background:
+                radial-gradient(ellipse 70% 60% at 30% 30%, rgba(108,99,255,.18) 0%, transparent 65%),
+                radial-gradient(ellipse 60% 50% at 75% 75%, rgba(255,101,132,.12) 0%, transparent 65%),
+                var(--bg);
+        }
+        .landing .brand-tag {
+            font-family: var(--font-head);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 24px;
+            padding: 6px 16px;
+            border: 1px solid rgba(108,99,255,.3);
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .landing h1 {
+            font-size: clamp(40px, 6vw, 72px);
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--text) 40%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .landing .tagline {
+            color: var(--muted);
+            font-size: 18px;
+            max-width: 480px;
+            margin: 0 auto 48px;
+            line-height: 1.7;
+        }
+        .landing-btns { display: flex; gap: 16px; justify-content: center; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 14px 32px;
+            border-radius: var(--radius);
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: .5px;
+            cursor: pointer;
+            transition: all .2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+        .btn-filled {
+            background: var(--accent);
+            color: #fff;
+            padding: 14px 32px;
+            border-radius: var(--radius);
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: .5px;
+            cursor: pointer;
+            transition: all .2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+        }
+        .btn-filled:hover { background: #5a52e0; transform: translateY(-1px); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="landing">
+        <span class="brand-tag">⚡ Colaborate</span>
+        <h1>Manage Projects<br/>Together</h1>
+        <p class="tagline">A clean, fast project management tool built for developers and their teams.</p>
+        <div class="landing-btns">
+            <a href="signup/signup.html" class="btn-filled">Get Started →</a>
+            <a href="login/login.html" class="btn-outline">Log In</a>
+        </div>
+    </div>
+</body>
+</html>

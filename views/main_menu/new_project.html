@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Project — Colaborate</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="brand">⚡ Colaborate</div>
+        <div class="user-info">
+            <div class="user-name" id="sidebar-name">Loading…</div>
+            <div class="user-role" id="sidebar-role"></div>
+        </div>
+
+        <a href="projects.html" class="nav-item">
+            <span class="nav-icon">📁</span> My Projects
+        </a>
+        <a href="new_project.html" class="nav-item active">
+            <span class="nav-icon">➕</span> New Project
+        </a>
+        <a href="../admin/admin.html" class="nav-item" id="admin-link" style="display:none">
+            <span class="nav-icon">🛡️</span> Admin Panel
+        </a>
+
+        <div class="sidebar-spacer"></div>
+        <button class="nav-item danger" id="logout-btn">
+            <span class="nav-icon">🚪</span> Log Out
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1>New Project</h1>
+                <p class="subtitle">Fill in the details below</p>
+            </div>
+        </div>
+
+        <div class="card" style="max-width:560px">
+            <div class="field">
+                <label>Project Name</label>
+                <input type="text" id="name" placeholder="e.g. Website Redesign" />
+            </div>
+            <div class="field">
+                <label>Description</label>
+                <textarea id="description" rows="5" placeholder="What is this project about?"></textarea>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:8px;">
+                <a href="projects.html" class="btn btn-ghost" style="flex:1;text-decoration:none;">Cancel</a>
+                <button class="btn btn-primary" style="flex:2;" id="creat_project" type="button">Create Project</button>
+            </div>
+            <div id="error" class="error-msg"></div>
+        </div>
+    </main>
+</div>
+
+<script>
+const API = 'http://localhost:3000';
+
+async function loadMe() {
+    const res = await fetch(`${API}/me`, { credentials: 'include' });
+    if (res.status === 401) return window.location.href = '../login/login.html';
+    const data = await res.json();
+    document.getElementById('sidebar-name').textContent = data.name;
+    document.getElementById('sidebar-role').textContent = data.role;
+    if (data.role === 'admin' || data.role === 'superadmin')
+        document.getElementById('admin-link').style.display = 'flex';
+}
+
+document.getElementById('creat_project').addEventListener('click', async () => {
+    const error = document.getElementById('error');
+    const name  = document.getElementById('name').value.trim();
+    const desc  = document.getElementById('description').value.trim();
+    error.textContent = '';
+
+    if (!name || !desc) return (error.textContent = 'Please fill in all fields.');
+
+    try {
+        const res  = await fetch(`${API}/projects`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ name, description: desc })
+        });
+        const data = await res.json();
+        if (data.error) { error.textContent = data.error; return; }
+        window.location.href = 'projects.html';
+    } catch {
+        error.textContent = 'Could not connect to server.';
+    }
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+    await fetch(`${API}/logout`, { method: 'POST', credentials: 'include' });
+    window.location.href = '../login/login.html';
+});
+
+loadMe();
+</script>
+</body>
+</html>

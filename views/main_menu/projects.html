@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projects — Colaborate</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">⚡ Colaborate</div>
+        <div class="user-info">
+            <div class="user-name" id="sidebar-name">Loading…</div>
+            <div class="user-role" id="sidebar-role"></div>
+        </div>
+
+        <a href="projects.html" class="nav-item active">
+            <span class="nav-icon">📁</span> My Projects
+        </a>
+        <a href="new_project.html" class="nav-item">
+            <span class="nav-icon">➕</span> New Project
+        </a>
+        <a href="../admin/admin.html" class="nav-item" id="admin-link" style="display:none">
+            <span class="nav-icon">🛡️</span> Admin Panel
+        </a>
+
+        <div class="sidebar-spacer"></div>
+        <button class="nav-item danger" id="logout-btn">
+            <span class="nav-icon">🚪</span> Log Out
+        </button>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1>My Projects</h1>
+                <p class="subtitle">All your projects in one place</p>
+            </div>
+            <a href="new_project.html" class="btn btn-primary" style="width:auto;padding:12px 24px;">+ New Project</a>
+        </div>
+
+        <div id="project-list" class="project-grid"></div>
+    </main>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+        <h2>Edit Project</h2>
+        <input type="hidden" id="edit-id" />
+        <div class="field"><label>Name</label><input type="text" id="edit-name" /></div>
+        <div class="field"><label>Description</label><textarea id="edit-desc" rows="4"></textarea></div>
+        <div id="edit-error" class="error-msg"></div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" id="edit-cancel">Cancel</button>
+            <button class="btn btn-primary" style="width:auto;" id="edit-save">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:3000';
+
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => t.className = '', 2500);
+}
+
+async function loadMe() {
+    const res  = await fetch(`${API}/me`, { credentials: 'include' });
+    if (res.status === 401) return window.location.href = '../login/login.html';
+    const data = await res.json();
+    document.getElementById('sidebar-name').textContent = data.name;
+    document.getElementById('sidebar-role').textContent = data.role;
+    if (data.role === 'admin' || data.role === 'superadmin')
+        document.getElementById('admin-link').style.display = 'flex';
+}
+
+async function loadProjects() {
+    const res      = await fetch(`${API}/projects`, { credentials: 'include' });
+    if (res.status === 401) return window.location.href = '../login/login.html';
+    const projects = await res.json();
+    const list     = document.getElementById('project-list');
+
+    if (projects.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1">
+                <div class="icon">📭</div>
+                <p>No projects yet. Create your first one!</p>
+                <a href="new_project.html" class="btn btn-primary" style="width:auto;display:inline-flex;">+ New Project</a>
+            </div>`;
+        return;
+    }
+
+    list.innerHTML = '';
+    projects.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'project-card';
+        card.innerHTML = `
+            <h3>${p.name}</h3>
+            <p>${p.description}</p>
+            <div class="meta">Created ${new Date(p.createdAt).toLocaleDateString()}</div>
+            <div class="card-actions">
+                <button class="btn btn-ghost btn-sm edit-btn" data-id="${p.id}" data-name="${p.name}" data-desc="${p.description}">✏️ Edit</button>
+                <button class="btn btn-danger btn-sm delete-btn" data-id="${p.id}">🗑 Delete</button>
+            </div>`;
+        list.appendChild(card);
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openEdit(btn)));
+    document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => deleteProject(btn.dataset.id)));
+}
+
+function openEdit(btn) {
+    document.getElementById('edit-id').value   = btn.dataset.id;
+    document.getElementById('edit-name').value = btn.dataset.name;
+    document.getElementById('edit-desc').value = btn.dataset.desc;
+    document.getElementById('edit-error').textContent = '';
+    document.getElementById('edit-modal').classList.add('open');
+}
+
+document.getElementById('edit-cancel').addEventListener('click', () =>
+    document.getElementById('edit-modal').classList.remove('open'));
+
+document.getElementById('edit-save').addEventListener('click', async () => {
+    const id   = document.getElementById('edit-id').value;
+    const name = document.getElementById('edit-name').value.trim();
+    const desc = document.getElementById('edit-desc').value.trim();
+    const err  = document.getElementById('edit-error');
+    if (!name || !desc) return (err.textContent = 'All fields are required.');
+
+    const res  = await fetch(`${API}/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, description: desc })
+    });
+    const data = await res.json();
+    if (data.error) { err.textContent = data.error; return; }
+    document.getElementById('edit-modal').classList.remove('open');
+    showToast('Project updated!');
+    loadProjects();
+});
+
+async function deleteProject(id) {
+    if (!confirm('Delete this project? This cannot be undone.')) return;
+    const res = await fetch(`${API}/projects/${id}`, { method: 'DELETE', credentials: 'include' });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    showToast('Project deleted.');
+    loadProjects();
+}
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+    await fetch(`${API}/logout`, { method: 'POST', credentials: 'include' });
+    window.location.href = '../login/login.html';
+});
+
+loadMe();
+loadProjects();
+</script>
+</body>
+</html>

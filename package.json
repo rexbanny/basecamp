@@ -1,0 +1,17 @@
+{
+  "name": "basecamp222",
+  "version": "2.0.0",
+  "description": "Project management tool — MVC structure",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.6",
+    "express": "^4.22.2",
+    "express-session": "^1.19.0",
+    "sequelize": "^6.37.8",
+    "sqlite3": "^5.1.7"
+  }
+}

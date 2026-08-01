@@ -1,0 +1,7 @@
+node_modules/
+user.db
+user_id.db
+*.db
+.env
+.DS_Store
+npm-debug.log*

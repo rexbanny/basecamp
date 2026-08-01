@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel — Colaborate</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="brand">⚡ Colaborate</div>
+        <div class="user-info">
+            <div class="user-name" id="sidebar-name">Loading…</div>
+            <div class="user-role" id="sidebar-role"></div>
+        </div>
+
+        <a href="../main_menu/projects.html" class="nav-item">
+            <span class="nav-icon">📁</span> My Projects
+        </a>
+        <a href="../main_menu/new_project.html" class="nav-item">
+            <span class="nav-icon">➕</span> New Project
+        </a>
+        <a href="admin.html" class="nav-item active">
+            <span class="nav-icon">🛡️</span> Admin Panel
+        </a>
+
+        <div class="sidebar-spacer"></div>
+        <button class="nav-item danger" id="logout-btn">
+            <span class="nav-icon">🚪</span> Log Out
+        </button>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1>Admin Panel</h1>
+                <p class="subtitle">Manage users and projects</p>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-num" id="stat-users">—</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat-projects">—</div>
+                <div class="stat-label">Total Projects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat-admins">—</div>
+                <div class="stat-label">Admins</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;">
+            <button class="tab-btn active" data-tab="users">👥 Users</button>
+            <button class="tab-btn" data-tab="projects">📁 All Projects</button>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="tab-users">
+            <div class="card" style="padding:0;overflow:hidden;">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Projects</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Tab -->
+        <div id="tab-projects" style="display:none;">
+            <div class="card" style="padding:0;overflow:hidden;">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Project</th>
+                                <th>Description</th>
+                                <th>Owner</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projects-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="toast"></div>
+
+<style>
+.tab-btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-head);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+}
+.tab-btn.active { background: var(--accent); color: #fff; }
+.tab-btn:hover:not(.active) { color: var(--text); }
+</style>
+
+<script>
+const API = 'http://localhost:3000';
+let myRole = '';
+
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => t.className = '', 2500);
+}
+
+async function loadMe() {
+    const res = await fetch(`${API}/me`, { credentials: 'include' });
+    if (res.status === 401) return window.location.href = '../login/login.html';
+    const data = await res.json();
+    myRole = data.role;
+    document.getElementById('sidebar-name').textContent = data.name;
+    document.getElementById('sidebar-role').textContent = data.role;
+    if (data.role !== 'admin' && data.role !== 'superadmin')
+        return window.location.href = '../main_menu/projects.html';
+}
+
+async function loadUsers() {
+    const res   = await fetch(`${API}/admin/users`, { credentials: 'include' });
+    const users = await res.json();
+
+    document.getElementById('stat-users').textContent    = users.length;
+    document.getElementById('stat-admins').textContent   = users.filter(u => u.role === 'admin' || u.role === 'superadmin').length;
+
+    const tbody = document.getElementById('users-tbody');
+    tbody.innerHTML = '';
+
+    users.forEach(u => {
+        const tr = document.createElement('tr');
+        const badgeClass = u.role === 'superadmin' ? 'badge-superadmin' : u.role === 'admin' ? 'badge-admin' : 'badge-user';
+        const isSuperAdmin = u.role === 'superadmin';
+
+        // Role toggle button (only superadmin can change roles)
+        const roleBtn = (myRole === 'superadmin' && !isSuperAdmin)
+            ? `<button class="btn btn-ghost btn-sm role-btn" data-id="${u.id}" data-role="${u.role}">
+                ${u.role === 'admin' ? '↓ Revoke Admin' : '↑ Make Admin'}
+               </button>`
+            : '';
+
+        const deleteBtn = !isSuperAdmin
+            ? `<button class="btn btn-danger btn-sm del-user-btn" data-id="${u.id}">🗑 Delete</button>`
+            : '';
+
+        tr.innerHTML = `
+            <td><strong>${u.name}</strong></td>
+            <td style="color:var(--muted)">${u.email}</td>
+            <td><span class="badge ${badgeClass}">${u.role}</span></td>
+            <td>${u.projects?.length ?? 0}</td>
+            <td style="color:var(--muted)">${new Date(u.createdAt).toLocaleDateString()}</td>
+            <td><div style="display:flex;gap:8px;">${roleBtn}${deleteBtn}</div></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.role-btn').forEach(btn => btn.addEventListener('click', () => toggleRole(btn)));
+    document.querySelectorAll('.del-user-btn').forEach(btn => btn.addEventListener('click', () => deleteUser(btn.dataset.id)));
+}
+
+async function loadAllProjects() {
+    const res      = await fetch(`${API}/admin/projects`, { credentials: 'include' });
+    const projects = await res.json();
+
+    document.getElementById('stat-projects').textContent = projects.length;
+
+    const tbody = document.getElementById('projects-tbody');
+    tbody.innerHTML = '';
+
+    projects.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${p.name}</strong></td>
+            <td style="color:var(--muted);max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.description}</td>
+            <td>${p.owner?.name ?? '—'} <span style="color:var(--muted);font-size:12px">${p.owner?.email ?? ''}</span></td>
+            <td style="color:var(--muted)">${new Date(p.createdAt).toLocaleDateString()}</td>
+            <td><button class="btn btn-danger btn-sm del-proj-btn" data-id="${p.id}">🗑 Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.del-proj-btn').forEach(btn => btn.addEventListener('click', () => deleteAdminProject(btn.dataset.id)));
+}
+
+async function toggleRole(btn) {
+    const newRole = btn.dataset.role === 'admin' ? 'user' : 'admin';
+    if (!confirm(`Change this user's role to "${newRole}"?`)) return;
+    const res  = await fetch(`${API}/admin/users/${btn.dataset.id}/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ role: newRole })
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    showToast(`Role updated to ${newRole}`);
+    loadUsers();
+}
+
+async function deleteUser(id) {
+    if (!confirm('Delete this user and all their projects? This cannot be undone.')) return;
+    const res  = await fetch(`${API}/admin/users/${id}`, { method: 'DELETE', credentials: 'include' });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    showToast('User deleted.');
+    loadUsers();
+    loadAllProjects();
+}
+
+async function deleteAdminProject(id) {
+    if (!confirm('Delete this project? This cannot be undone.')) return;
+    const res  = await fetch(`${API}/admin/projects/${id}`, { method: 'DELETE', credentials: 'include' });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    showToast('Project deleted.');
+    loadAllProjects();
+    loadUsers();
+}
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-users').style.display    = btn.dataset.tab === 'users'    ? 'block' : 'none';
+        document.getElementById('tab-projects').style.display = btn.dataset.tab === 'projects' ? 'block' : 'none';
+    });
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+    await fetch(`${API}/logout`, { method: 'POST', credentials: 'include' });
+    window.location.href = '../login/login.html';
+});
+
+async function init() {
+    await loadMe();
+    await loadUsers();
+    await loadAllProjects();
+}
+
+init();
+</script>
+</body>
+</html>
